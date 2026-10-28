@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Jogo da Velha 3D VR</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    color: white;
+    background:
+        radial-gradient(circle at 50% 30%, #263b69 0%, #10152b 45%, #050711 100%);
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+/* =========================
+   MENU
+========================= */
+
+#menu {
+    position: absolute;
+    z-index: 20;
+    inset: 0;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    background:
+        radial-gradient(circle at center, rgba(38, 59, 105, .7), rgba(5, 7, 17, .98));
+}
+
+h1 {
+    font-size: clamp(38px, 7vw, 80px);
+    margin: 0 0 10px;
+    text-align: center;
+
+    color: #70e1ff;
+    text-shadow:
+        0 0 10px #00c8ff,
+        0 0 30px #0066ff;
+}
+
+.subtitulo {
+    color: #b9c8ff;
+    margin-bottom: 30px;
+}
+
+.menu-box {
+    width: min(90%, 420px);
+    padding: 25px;
+
+    border: 1px solid rgba(112,225,255,.5);
+    border-radius: 20px;
+
+    background: rgba(10, 17, 38, .85);
+    box-shadow: 0 0 40px rgba(0, 183, 255, .2);
+}
+
+button {
+    width: 100%;
+    min-height: 50px;
+    margin: 7px 0;
+
+    border: 0;
+    border-radius: 12px;
+
+    background: linear-gradient(135deg, #1597ff, #735cff);
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(72, 199, 255, .6);
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+
+    border: 1px solid #4a6ca8;
+    border-radius: 10px;
+
+    background: #0c142b;
+    color: white;
+
+    margin-bottom: 10px;
+}
+
+.escondido {
+    display: none !important;
+}
+
+/* =========================
+   JOGO
+========================= */
+
+#game {
+    display: none;
+    position: absolute;
+    inset: 0;
+}
+
+#hud {
+    position: absolute;
+    z-index: 10;
+
+    top: 15px;
+    left: 15px;
+    right: 15px;
+
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+
+    pointer-events: none;
+}
+
+.painel {
+    padding: 12px 18px;
+
+    border: 1px solid rgba(112,225,255,.4);
+    border-radius: 14px;
+
+    background: rgba(5, 10, 25, .72);
+
+    backdrop-filter: blur(8px);
+
+    box-shadow: 0 0 20px rgba(0, 150, 255, .15);
+}
+
+#mensagem {
+    position: absolute;
+
+    z-index: 10;
+
+    left: 50%;
+    bottom: 30px;
+
+    transform: translateX(-50%);
+
+    padding: 12px 24px;
+
+    border-radius: 20px;
+
+    background: rgba(5, 10, 25, .85);
+
+    border: 1px solid #55dfff;
+
+    box-shadow: 0 0 25px rgba(0, 220, 255, .35);
+
+    text-align: center;
+}
+
+#controles {
+    position: absolute;
+    z-index: 15;
+
+    right: 15px;
+    bottom: 15px;
+
+    width: 190px;
+}
+
+#controles button {
+    background: rgba(12, 24, 50, .9);
+    border: 1px solid #4bcfff;
+}
+
+/* =========================
+   CENÁRIO 3D
+========================= */
+
+#scene {
+    position: absolute;
+    inset: 0;
+
+    perspective: 900px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#world {
+    width: 500px;
+    height: 500px;
+
+    position: relative;
+
+    transform-style: preserve-3d;
+
+    transform:
+        rotateX(55deg)
+        rotateZ(0deg)
+        translateZ(0px);
+
+    transition: transform .4s ease;
+}
+
+/* chão */
+
+#floor {
+    position: absolute;
+
+    width: 900px;
+    height: 900px;
+
+    left: -200px;
+    top: -200px;
+
+    transform: translateZ(-100px);
+
+    background:
+        linear-gradient(rgba(30, 90, 130, .15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30, 90, 130, .15) 1px, transparent 1px);
+
+    background-size: 40px 40px;
+
+    background-color: #07101e;
+
+    border: 1px solid rgba(70, 180, 255, .25);
+}
+
+/* tabuleiro */
+
+#board {
+    position: absolute;
+
+    width: 420px;
+    height: 420px;
+
+    left: 40px;
+    top: 40px;
+
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+
+    gap: 10px;
+
+    padding: 10px;
+
+    transform-style: preserve-3d;
+
+    background: rgba(10, 20, 40, .85);
+
+    border: 4px solid #42dfff;
+
+    box-shadow:
+        0 0 20px #00cfff,
+        inset 0 0 30px rgba(0, 190, 255, .2);
+}
+
+/* casas */
+
+.cell {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 2px solid rgba(90, 210, 255, .55);
+
+    background:
+        linear-gradient(145deg,
+        rgba(20, 50, 90, .9),
+        rgba(7, 15, 35, .9));
+
+    cursor: pointer;
+
+    transform-style: preserve-3d;
+
+    transition:
+        transform .2s,
+        background .2s,
+        box-shadow .2s;
+}
+
+.cell:hover {
+    transform: translateZ(15px);
+
+    background: rgba(20, 80, 120, .9);
+
+    box-shadow:
+        0 0 20px #00cfff,
+        inset 0 0 20px rgba(0, 220, 255, .3);
+}
+
+/* peças */
+
+.x,
+.o {
+    font-size: 80px;
+    font-weight: bold;
+
+    transform: translateZ(25px);
+
+    animation: aparecer .35s ease-out;
+}
+
+.x {
+    color: #ff557f;
+
+    text-shadow:
+        0 0 10px #ff174f,
+        0 0 30px #ff174f;
+}
+
+.o {
+    color: #55e7ff;
+
+    text-shadow:
+        0 0 10px #00cfff,
+        0 0 30px #00cfff;
+}
+
+.vencedora {
+    background: rgba(80, 255, 150, .35) !important;
+
+    box-shadow:
+        0 0 30px #55ff99,
+        inset 0 0 30px rgba(50,255,150,.4) !important;
+
+    animation: pulsar .6s infinite alternate;
+}
+
+@keyframes aparecer {
+    from {
+        transform: translateZ(0) scale(.2);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateZ(25px) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulsar {
+    from {
+        filter: brightness(1);
+    }
+
+    to {
+        filter: brightness(1.8);
+    }
+}
+
+/* partículas */
+
+.particula {
+    position: absolute;
+
+    width: 5px;
+    height: 5px;
+
+    border-radius: 50%;
+
+    background: #5de7ff;
+
+    box-shadow: 0 0 10px #5de7ff;
+
+    animation: flutuar 5s linear infinite;
+}
+
+@keyframes flutuar {
+    from {
+        transform: translateY(100vh);
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
+}
+
+/* =========================
+   VITÓRIA
+========================= */
+
+#victory {
+    position: absolute;
+    z-index: 30;
+
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 15, .7);
+
+    backdrop-filter: blur(8px);
+}
+
+.victory-box {
+    text-align: center;
+
+    padding: 40px;
+
+    border-radius: 25px;
+
+    background: #0b1530;
+
+    border: 2px solid #5eeaff;
+
+    box-shadow:
+        0 0 50px rgba(0, 220, 255, .5);
+}
+
+.victory-box h2 {
+    color: #5de7ff;
+    font-size: 38px;
+}
+
+/* =========================
+   VR
+========================= */
+
+#vrInfo {
+    position: absolute;
+    z-index: 12;
+
+    left: 15px;
+    bottom: 15px;
+
+    padding: 10px 14px;
+
+    border-radius: 12px;
+
+    background: rgba(5, 10, 25, .75);
+
+    border: 1px solid rgba(120,220,255,.4);
+
+    color: #a9dfff;
+}
+
+/* celular */
+
+@media(max-width: 600px) {
+
+    #world {
+        width: 350px;
+        height: 350px;
+    }
+
+    #board {
+        width: 300px;
+        height: 300px;
+
+        left: 25px;
+        top: 25px;
+    }
+
+    .x,
+    .o {
+        font-size: 55px;
+    }
+
+    #hud {
+        font-size: 12px;
+    }
+
+    #vrInfo {
+        display: none;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+    <!-- MENU -->
+
+    <section id="menu">
+
+        <h1>⚔️ TIC TAC VR</h1>
+
+        <div class="subtitulo">
+            Jogo da Velha 3D • IA • VR
+        </div>
+
+        <div class="menu-box">
+
+            <input
+                id="nome"
+                placeholder="Nome do jogador"
+                maxlength="20"
+            >
+
+            <button id="pvc">
+                🤖 Jogar contra IA
+            </button>
+
+            <button id="pvp">
+                👥 Dois jogadores
+            </button>
+
+            <button id="dificuldade">
+                🧠 Dificuldade: DIFÍCIL
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- JOGO -->
+
+    <section id="game">
+
+        <div id="hud">
+
+            <div class="painel">
+                ❌ <span id="j1Nome">Jogador</span>:
+                <strong id="pontos1">0</strong>
+            </div>
+
+            <div class="painel">
+                🟡 Empates:
+                <strong id="empates">0</strong>
+            </div>
+
+            <div class="painel">
+                ⭕ <span id="j2Nome">IA</span>:
+                <strong id="pontos2">0</strong>
+            </div>
+
+        </div>
+
+
+        <div id="scene">
+
+            <div id="world">
+
+                <div id="floor"></div>
+
+                <div id="board"></div>
+
+            </div>
+
+        </div>
+
+
+        <div id="mensagem">
+            Sua vez!
+        </div>
+
+
+        <div id="vrInfo">
+            🥽 Modo VR: olhe para o tabuleiro e selecione uma casa.
+        </div>
+
+
+        <div id="controles">
+
+            <button id="rotacionar">
+                🔄 Girar câmera
+            </button>
+
+            <button id="novo">
+                🔁 Nova partida
+            </button>
+
+            <button id="menuBtn">
+                🏠 Menu
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- VITÓRIA -->
+
+    <section id="victory" class="escondido">
+
+        <div class="victory-box">
+
+            <h2 id="vencedor">
+                🎉 Vitória!
+            </h2>
+
+            <p>Excelente partida!</p>
+
+            <button id="continuar">
+                Continuar
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   CONFIGURAÇÕES
+===================================================== */
+
+const simboloJ1 = "X";
+const simboloJ2 = "O";
+
+let tabuleiro = Array(9).fill("");
+
+let modo = "pvc";
+
+let dificuldade = "dificil";
+
+let jogoAcabou = false;
+
+let turno = simboloJ1;
+
+let nomeJ1 = "Jogador";
+
+let nomeJ2 = "IA";
+
+let placar = {
+    j1: 0,
+    empate: 0,
+    j2: 0
+};
+
+let rotacao = 0;
+
+
+/* =====================================================
+   ELEMENTOS
+===================================================== */
+
+const menu = document.getElementById("menu");
+
+const game = document.getElementById("game");
+
+const board = document.getElementById("board");
+
+const mensagem = document.getElementById("mensagem");
+
+const victory = document.getElementById("victory");
+
+const vencedor = document.getElementById("vencedor");
+
+const nomeInput = document.getElementById("nome");
+
+const pontos1 = document.getElementById("pontos1");
+
+const pontos2 = document.getElementById("pontos2");
+
+const empates = document.getElementById("empates");
+
+const world = document.getElementById("world");
+
+
+/* =====================================================
+   ÁUDIO
+===================================================== */
+
+let audioContext;
+
+function iniciarAudio() {
+
+    if (!audioContext) {
+
+        audioContext =
+            new (window.AudioContext ||
+            window.webkitAudioContext)();
+
+    }
+
+    if (audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+}
+
+
+function som(freq, duracao, tipo = "sine") {
+
+    iniciarAudio();
+
+    const osc =
+        audioContext.createOscillator();
+
+    const ganho =
+        audioContext.createGain();
+
+    osc.type = tipo;
+
+    osc.frequency.value = freq;
+
+    ganho.gain.setValueAtTime(
+        .15,
+        audioContext.currentTime
+    );
+
+    ganho.gain.exponentialRampToValueAtTime(
+        .001,
+        audioContext.currentTime + duracao
+    );
+
+    osc.connect(ganho);
+
+    ganho.connect(audioContext.destination);
+
+    osc.start();
+
+    osc.stop(
+        audioContext.currentTime + duracao
+    );
+}
+
+
+function somJogada() {
+    som(440, .1);
+}
+
+
+function somVitoria() {
+
+    som(523, .15);
+
+    setTimeout(() => som(659, .15), 150);
+
+    setTimeout(() => som(784, .3), 300);
+}
+
+
+function somEmpate() {
+    som(220, .3, "triangle");
+}
+
+
+/* =====================================================
+   MENU
+===================================================== */
+
+document.getElementById("pvc")
+.addEventListener("click", () => {
+
+    modo = "pvc";
+
+    iniciarJogo();
+
+});
+
+
+document.getElementById("pvp")
+.addEventListener("click", () => {
+
+    modo = "pvp";
+
+    iniciarJogo();
+
+});
+
+
+document.getElementById("dificuldade")
+.addEventListener("click", () => {
+
+    dificuldade =
+        dificuldade === "dificil"
+        ? "medio"
+        : "dificil";
+
+    document.getElementById("dificuldade")
+        .textContent =
+        dificuldade === "dificil"
+        ? "🧠 Dificuldade: DIFÍCIL"
+        : "🧠 Dificuldade: MÉDIO";
+
+});
+
+
+/* =====================================================
+   INICIAR JOGO
+===================================================== */
+
+function iniciarJogo() {
+
+    iniciarAudio();
+
+    nomeJ1 =
+        nomeInput.value.trim() ||
+        "Jogador";
+
+    nomeJ2 =
+        modo === "pvc"
+        ? "IA"
+        : "Jogador 2";
+
+    document.getElementById("j1Nome")
+        .textContent = nomeJ1;
+
+    document.getElementById("j2Nome")
+        .textContent = nomeJ2;
+
+    menu.style.display = "none";
+
+    game.style.display = "block";
+
+    novoJogo();
+
+}
+
+
+/* =====================================================
+   TABULEIRO
+===================================================== */
+
+function criarTabuleiro() {
+
+    board.innerHTML = "";
+
+    tabuleiro.forEach((valor, index) => {
+
+        const celula =
+            document.createElement("div");
+
+        celula.className = "cell";
+
+        if (valor === "X") {
+
+            celula.classList.add("x");
+
+            celula.textContent = "X";
+
+        }
+
+        if (valor === "O") {
+
+            celula.classList.add("o");
+
+            celula.textContent = "O";
+
+        }
+
+        celula.addEventListener(
+            "click",
+            () => jogar(index)
+        );
+
+        board.appendChild(celula);
+
+    });
+
+}
+
+
+/* =====================================================
+   JOGADA
+===================================================== */
+
+function jogar(index) {
+
+    if (jogoAcabou) return;
+
+    if (tabuleiro[index] !== "") return;
+
+    if (
+        modo === "pvc" &&
+        turno !== simboloJ1
+    ) return;
+
+    tabuleiro[index] = turno;
+
+    somJogada();
+
+    criarTabuleiro();
+
+    if (verificarFim(turno)) return;
+
+    turno =
+        turno === simboloJ1
+        ? simboloJ2
+        : simboloJ1;
+
+    atualizarMensagem();
+
+    if (
+        modo === "pvc" &&
+        turno === simboloJ2
+    ) {
+
+        mensagem.textContent =
+            "🤖 IA analisando...";
+
+        setTimeout(jogadaIA, 500);
+
+    }
+
+}
+
+
+/* =====================================================
+   IA
+===================================================== */
+
+function jogadaIA() {
+
+    if (jogoAcabou) return;
+
+    let jogada;
+
+    if (dificuldade === "medio") {
+
+        jogada = jogadaAleatoria();
+
+    } else {
+
+        jogada = melhorJogada();
+
+    }
+
+    if (jogada === -1) return;
+
+    tabuleiro[jogada] = simboloJ2;
+
+    somJogada();
+
+    criarTabuleiro();
+
+    if (verificarFim(simboloJ2)) return;
+
+    turno = simboloJ1;
+
+    atualizarMensagem();
+
+}
+
+
+/* =====================================================
+   IA ALEATÓRIA
+===================================================== */
+
+function jogadaAleatoria() {
+
+    const vazias =
+        tabuleiro
+        .map((v, i) => v === "" ? i : null)
+        .filter(v => v !== null);
+
+    if (vazias.length === 0)
+        return -1;
+
+    return vazias[
+        Math.floor(
+            Math.random() * vazias.length
+        )
+    ];
+}
+
+
+/* =====================================================
+   MINIMAX
+===================================================== */
+
+function melhorJogada() {
+
+    let melhor = -Infinity;
+
+    let indice = -1;
+
+    for (
+        let i = 0;
+        i < 9;
+        i++
+    ) {
+
+        if (tabuleiro[i] === "") {
+
+            tabuleiro[i] = simboloJ2;
+
+            const pontuacao =
+                minimax(
+                    tabuleiro,
+                    0,
+                    false
+                );
+
+            tabuleiro[i] = "";
+
+            if (pontuacao > melhor) {
+
+                melhor = pontuacao;
+
+                indice = i;
+
+            }
+
+        }
+
+    }
+
+    return indice;
+}
+
+
+function minimax(
+    tab,
+    profundidade,
+    maximizando
+) {
+
+    if (venceu(tab, simboloJ2))
+        return 10 - profundidade;
+
+    if (venceu(tab, simboloJ1))
+        return profundidade - 10;
+
+    if (!tab.includes(""))
+        return 0;
+
+
+    if (maximizando) {
+
+        let melhor = -Infinity;
+
+        for (
+            let i = 0;
+            i < 9;
+            i++
+        ) {
+
+            if (tab[i] === "") {
+
+                tab[i] = simboloJ2;
+
+                melhor =
+                    Math.max(
+                        melhor,
+                        minimax(
+                            tab,
+                            profundidade + 1,
+                            false
+                        )
+                    );
+
+                tab[i] = "";
+
+            }
+
+        }
+
+        return melhor;
+
+    } else {
+
+        let melhor = Infinity;
+
+        for (
+            let i = 0;
+            i < 9;
+            i++
+        ) {
+
+            if (tab[i] === "") {
+
+                tab[i] = simboloJ1;
+
+                melhor =
+                    Math.min(
+                        melhor,
+                        minimax(
+                            tab,
+                            profundidade + 1,
+                            true
+                        )
+                    );
+
+                tab[i] = "";
+
+            }
+
+        }
+
+        return melhor;
+
+    }
+
+}
+
+
+/* =====================================================
+   VITÓRIA
+===================================================== */
+
+const combinacoes = [
+
+    [0,1,2],
+
+    [3,4,5],
+
+    [6,7,8],
+
+    [0,3,6],
+
+    [1,4,7],
+
+    [2,5,8],
+
+    [0,4,8],
+
+    [2,4,6]
+
+];
+
+
+function venceu(tab, jogador) {
+
+    return combinacoes.some(
+        combo =>
+            combo.every(
+                i => tab[i] === jogador
+            )
+    );
+
+}
+
+
+function combinacaoVencedora(jogador) {
+
+    return combinacoes.find(
+        combo =>
+            combo.every(
+                i => tabuleiro[i] === jogador
+            )
+    );
+
+}
+
+
+/* =====================================================
+   FIM
+===================================================== */
+
+function verificarFim(jogador) {
+
+    if (venceu(tabuleiro, jogador)) {
+
+        const combo =
+            combinacaoVencedora(jogador);
+
+        destacar(combo);
+
+        jogoAcabou = true;
+
+        somVitoria();
+
+        if (jogador === simboloJ1) {
+
+            placar.j1++;
+
+            pontos1.textContent =
+                placar.j1;
+
+            mensagem.textContent =
+                nomeJ1 + " venceu!";
+
+            mostrarVitoria(
+                "🏆 " + nomeJ1 + " VENCEU!"
+            );
+
+        } else {
+
+            placar.j2++;
+
+            pontos2.textContent =
+                placar.j2;
+
+            mensagem.textContent =
+                nomeJ2 + " venceu!";
+
+            mostrarVitoria(
+                "🤖 " + nomeJ2 + " VENCEU!"
+            );
+
+        }
+
+        return true;
+
+    }
+
+
+    if (!tabuleiro.includes("")) {
+
+        jogoAcabou = true;
+
+        placar.empate++;
+
+        empates.textContent =
+            placar.empate;
+
+        mensagem.textContent =
+            "🤝 Empate!";
+
+        somEmpate();
+
+        mostrarVitoria(
+            "🤝 EMPATE!"
+        );
+
+        return true;
+
+    }
+
+    return false;
+
+}
+
+
+/* =====================================================
+   DESTAQUE
+===================================================== */
+
+function destacar(combo) {
+
+    const celulas =
+        board.querySelectorAll(".cell");
+
+    combo.forEach(index => {
+
+        celulas[index]
+            .classList.add("vencedora");
+
+    });
+
+}
+
+
+/* =====================================================
+   MENSAGEM
+===================================================== */
+
+function atualizarMensagem() {
+
+    if (turno === simboloJ1) {
+
+        mensagem.textContent =
+            `❌ Vez de ${nomeJ1}`;
+
+    } else {
+
+        mensagem.textContent =
+            `⭕ Vez de ${nomeJ2}`;
+
+    }
+
+}
+
+
+/* =====================================================
+   NOVA PARTIDA
+===================================================== */
+
+function novoJogo() {
+
+    esconderVitoria();
+
+    tabuleiro =
+        Array(9).fill("");
+
+    jogoAcabou = false;
+
+    turno = simboloJ1;
+
+    criarTabuleiro();
+
+    atualizarMensagem();
+
+}
+
+
+/* =====================================================
+   VITÓRIA
+===================================================== */
+
+function mostrarVitoria(texto) {
+
+    vencedor.textContent = texto;
+
+    victory.classList.remove(
+        "escondido"
+    );
+
+}
+
+
+function esconderVitoria() {
+
+    victory.classList.add(
+        "escondido"
+    );
+
+}
+
+
+document.getElementById("continuar")
+.addEventListener(
+    "click",
+    novoJogo
+);
+
+
+/* =====================================================
+   BOTÕES
+===================================================== */
+
+document.getElementById("novo")
+.addEventListener(
+    "click",
+    novoJogo
+);
+
+
+document.getElementById("menuBtn")
+.addEventListener(
+    "click",
+    () => {
+
+        game.style.display = "none";
+
+        menu.style.display = "flex";
+
+        esconderVitoria();
+
+    }
+);
+
+
+/* =====================================================
+   CÂMERA 3D
+===================================================== */
+
+document.getElementById("rotacionar")
+.addEventListener(
+    "click",
+    () => {
+
+        rotacao += 90;
+
+        world.style.transform =
+            `rotateX(55deg)
+             rotateZ(${rotacao}deg)`;
+
+    }
+);
+
+
+/* =====================================================
+   PARTÍCULAS
+===================================================== */
+
+function criarParticulas() {
+
+    for (
+        let i = 0;
+        i < 30;
+        i++
+    ) {
+
+        const p =
+            document.createElement("div");
+
+        p.className =
+            "particula";
+
+        p.style.left =
+            Math.random() * 100 + "%";
+
+        p.style.animationDelay =
+            Math.random() * 5 + "s";
+
+        p.style.animationDuration =
+            3 + Math.random() * 5 + "s";
+
+        document.body.appendChild(p);
+
+    }
+
+}
+
+criarParticulas();
+
+
+/* =====================================================
+   CONTROLE DE TECLADO
+===================================================== */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (game.style.display !== "block")
+            return;
+
+        /*
+         * Teclas 1-9 selecionam
+         * diretamente uma casa.
+         */
+
+        if (
+            event.key >= "1" &&
+            event.key <= "9"
+        ) {
+
+            jogar(
+                Number(event.key) - 1
+            );
+
+        }
+
+        /*
+         * R = nova partida
+         */
+
+        if (
+            event.key.toLowerCase() === "r"
+        ) {
+
+            novoJogo();
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   SUPORTE EXPERIMENTAL PARA VR
+===================================================== */
+
+/*
+   O navegador só disponibiliza WebXR
+   quando o dispositivo e o navegador
+   suportam VR.
+
+   Este botão não é obrigatório para
+   jogar a versão 3D normal.
+*/
+
+if ("xr" in navigator) {
+
+    console.log(
+        "WebXR disponível neste navegador."
+    );
+
+} else {
+
+    console.log(
+        "WebXR não disponível. "
+        + "O jogo continuará em modo 3D."
+    );
+
+}
+
+</script>
+
+</body>
+</html>
+
